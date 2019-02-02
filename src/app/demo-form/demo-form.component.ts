@@ -9,13 +9,17 @@ import { FormGroup } from "@angular/forms";
 })
 export class DemoFormComponent implements OnInit {
 
-  demoForm :FormGroup = this.demoFormService.init();
+  demoForm :FormGroup;
 
   constructor(
     private demoFormService:DemoFormService
   ) { }
 
   ngOnInit() {
+    this.demoFormService.teamForm$
+    .subscribe((form) => {
+      this.demoForm = form;
+    })
   }
 
 }
