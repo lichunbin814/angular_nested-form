@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { DemoFormService } from "src/app/demo-form/demo-form.service";
+import { FormGroup } from "@angular/forms";
 
 @Component({
   selector: 'app-demo-form',
@@ -7,7 +9,11 @@ import { Component, OnInit } from '@angular/core';
 })
 export class DemoFormComponent implements OnInit {
 
-  constructor() { }
+  demoForm :FormGroup = this.demoFormService.init();
+
+  constructor(
+    private demoFormService:DemoFormService
+  ) { }
 
   ngOnInit() {
   }
