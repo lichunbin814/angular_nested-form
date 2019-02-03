@@ -30,4 +30,9 @@ export class DemoFormComponent implements OnInit {
     this.demoFormService.addChild();
   }
 
+  removeLastChild(){
+    const lastIndex = this.childrenForms.length - 1;
+    this.childrenForms.splice(lastIndex,1);
+  }
+
 }

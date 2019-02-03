@@ -1,7 +1,10 @@
 <form [formGroup]="demoForm" >
  Version: {{demoForm.controls.version.value}}
  <br/>
- <button (click)="addChild()" type="button" >add child</button>
+ <button (click)="addChild()" type="button" >add child</button> 
+ <br/>
+  <button (click)="removeLastChild()" type="button" >remove last child</button> 
+
  <br/>
  <app-demo-child-form [childForm]="childForm"  *ngFor="let childForm of childrenForms" ></app-demo-child-form>
 </form>
