@@ -11,6 +11,10 @@ export class DemoFormComponent implements OnInit {
 
   demoForm :FormGroup;
 
+  get childrenForms(){
+    return this.demoFormService.currentChildrenForms;
+  }
+
   constructor(
     private demoFormService:DemoFormService
   ) { }
@@ -20,6 +24,10 @@ export class DemoFormComponent implements OnInit {
     .subscribe((form) => {
       this.demoForm = form;
     })
+  }
+
+  addChild(){
+    this.demoFormService.addChild();
   }
 
 }
