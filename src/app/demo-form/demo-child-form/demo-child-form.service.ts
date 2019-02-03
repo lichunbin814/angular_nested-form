@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { FormBuilder } from "@angular/forms";
-import { FormControl } from "@angular/forms";
+import { FormControl,Validators } from "@angular/forms";
 
 @Injectable()
 export class DemoChildFormService {
@@ -11,8 +11,12 @@ export class DemoChildFormService {
 
   create() {
     return this.formBuilder.group({
-      name: new FormControl(`${+new Date()}_name`),
-      address: new FormControl(`${+new Date()}_address`)
+      name: new FormControl(``, [
+        Validators.required
+      ]),
+      address: new FormControl(``, [
+        Validators.required
+      ])
     })
   }
 

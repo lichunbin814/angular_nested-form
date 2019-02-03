@@ -5,7 +5,7 @@ import { FormGroup } from "@angular/forms";
 @Component({
   selector: 'app-demo-form',
   templateUrl: './demo-form.component.html',
-  styleUrls: ['./demo-form.component.css']
+  styleUrls: ['./demo-form.component.scss']
 })
 export class DemoFormComponent implements OnInit {
 
