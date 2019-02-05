@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
-import { ControlValueAccessor } from '@angular/forms';
+import { Component, OnInit, forwardRef, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { NameFormControl } from "src/form-control/name-form-control/name-form-control";
-import { NG_VALUE_ACCESSOR } from "@angular/forms";
-import { forwardRef } from "@angular/core";
+import { fromEvent } from "rxjs";
+
+import { debounceTime } from 'rxjs/operators';
 
 
 export const NameFormControlComponentAccessor = {
@@ -19,7 +20,8 @@ export const NameFormControlComponentAccessor = {
     NameFormControlComponentAccessor
   ]
 })
-export class NameFormControlComponent implements OnInit, ControlValueAccessor {
+export class NameFormControlComponent implements OnInit, AfterViewInit, ControlValueAccessor {
+
 
   private _registerOnTouchedFn: Function;
   private _registerOnChangeFn: Function;
@@ -28,10 +30,31 @@ export class NameFormControlComponent implements OnInit, ControlValueAccessor {
     value: ''
   } as NameFormControl.ViewModel;
 
+  @ViewChild('input')
+  inputElmRef: ElementRef;
+
   constructor() { }
 
   ngOnInit() {
+
   }
+
+  ngAfterViewInit(): void {
+    fromEvent(this.inputElmRef.nativeElement, 'input')
+      .pipe(
+      debounceTime(200)
+      )
+      .subscribe((event: Event) => {
+        this.writeValue({
+          ...this.model,
+          value: (event.target as HTMLInputElement).value,
+        });
+
+        this._registerOnTouchedFn();
+      });
+  }
+
+
 
   writeValue(model: NameFormControl.ViewModel): void {
     if (!model) {
@@ -39,6 +62,10 @@ export class NameFormControlComponent implements OnInit, ControlValueAccessor {
     }
 
     this.model = model;
+
+    if (this._registerOnChangeFn) {
+      this._registerOnChangeFn(this.model);
+    }
   }
   registerOnChange(fn: any): void {
     this._registerOnChangeFn = fn;

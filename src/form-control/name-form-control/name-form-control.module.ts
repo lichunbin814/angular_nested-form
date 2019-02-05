@@ -11,6 +11,6 @@ import { NameFormControlComponent } from './name-form-control.component';
   ],
   exports: [
     NameFormControlComponent
-  ]
+  ],
 })
 export class NameFormControlModule { }
