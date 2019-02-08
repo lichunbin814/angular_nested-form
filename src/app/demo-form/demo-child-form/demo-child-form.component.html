@@ -2,6 +2,8 @@
   <div>
     <label>name</label>
     <app-name-form-control formControlName="name" ></app-name-form-control>
+    <br/>
+    <span class="msg-invalid" *ngIf="childForm.controls.name.errors">{{ childForm.controls.name.errors | json }}</span>
   </div>
   <br/>
   <div>

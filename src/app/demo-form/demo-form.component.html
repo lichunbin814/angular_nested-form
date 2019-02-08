@@ -1,10 +1,19 @@
-<form [formGroup]="demoForm" >
- Version: {{demoForm.controls.version.value}}
- <br/>
- <button (click)="addChild()" type="button" >add child</button> 
- <br/>
-  <button (click)="removeLastChild()" type="button" >remove last child</button> 
+<form [formGroup]="demoForm">
+    Version: {{demoForm.controls.version.value}}
+    <br />
+    <button (click)="addChild()" type="button">add child</button>
+    <br />
+    <button (click)="removeLastChild()" type="button">remove last child</button>
 
- <br/>
- <app-demo-child-form [childForm]="childForm"  *ngFor="let childForm of childrenForms" ></app-demo-child-form>
+    <br />
+    <div class="child-form-container">
+        <div class="child-form-col" *ngFor="let childForm of childrenForms">
+            <app-demo-child-form [childForm]="childForm"></app-demo-child-form>
+            <br/>
+            <div class="child-form-state">
+                childform valid : {{ childForm.valid }}
+            </div>
+        </div>
+    </div>
+
 </form>
