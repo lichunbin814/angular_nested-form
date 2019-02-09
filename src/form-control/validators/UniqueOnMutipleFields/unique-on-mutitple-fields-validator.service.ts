@@ -9,64 +9,36 @@ export class UniqueOnMutitpleFieldsValidatorService {
 
   private usedFormControlSet = {} as UniqueOnMutipleFieldsValidator.UsedFormControlSet.Root;
 
+
+
   constructor() { }
 
   init(arg: {
     groupName: string,
     errorMsg: string
   }) {
+
+    const isHaveToInit = this.enteredValues[arg.groupName] === undefined;
+    if (isHaveToInit) {
+      this.enteredValues[arg.groupName] = {};
+    }
+
     return (control: UniqueOnMutipleFieldsValidator.FormControl.Root) => {
 
+      const model = control.value as UniqueOnMutipleFieldsValidator.FormControl.ValueType;
+      const enteredValue = model.value;
 
-      const isHaveToInit = this.enteredValues[arg.groupName] === undefined;
-      if (isHaveToInit) {
-        this.enteredValues[arg.groupName] = {};
-      }
-
-      const enteredValueQuantitySet = this.enteredValues[arg.groupName];
-
-      const isChangeToNewValueResult = this.isChangeToNewValue({
-        control: control
+      this.resetValidatorInfo({
+        control,
+        enteredValue,
+        groupName: arg.groupName
       });
-      const enteredValue = isChangeToNewValueResult.enteredValue;
 
-      if (isChangeToNewValueResult.isRight) {
-        this.setPreviousEnteredValueAsUnentered({
-          groupName: arg.groupName,
-          control,
-          enteredValueQuantitySet,
-          prevEnteredValue: isChangeToNewValueResult.prevEnteredValue
-        });
-      }
 
       let isInvalid = this.isEntered({
-        currentValue: enteredValue,
-        enteredValueQuantitySet,
-        isUncaculateEnteredValueQuantity : isChangeToNewValueResult.isRight
+        groupName: arg.groupName,
+        key: enteredValue,
       });
-
-      if (isChangeToNewValueResult.isRight) {
-        this.updateEnteredValue({
-          groupName: arg.groupName,
-          control,
-          enteredValueQuantitySet,
-          enteredValue
-        });
-
-        this.revalidateFormControl({
-          control,
-          key: enteredValue,
-          groupName: arg.groupName,
-        })
-
-        if (isChangeToNewValueResult.isRight) {
-          this.revalidateFormControl({
-            control,
-            key: isChangeToNewValueResult.prevEnteredValue,
-            groupName: arg.groupName,
-          })
-        }
-      }
 
 
       if (isInvalid) {
@@ -83,16 +55,7 @@ export class UniqueOnMutitpleFieldsValidatorService {
   revalidateFormControl(
     arg: UniqueOnMutipleFieldsValidator.Method.RevalidateFormControlOfSameEnteredValue
   ) {
-    if (!this.usedFormControlSet[arg.groupName]) {
-      return;
-    }
-
-    const usedFormControlArray = this.usedFormControlSet[arg.groupName][arg.key];
-    if (!usedFormControlArray) {
-      return;
-    }
-
-    for (const usedFormControl of usedFormControlArray) {
+    for (const usedFormControl of arg.formControlArray) {
       const uninited = usedFormControl.valueChanges === undefined;
       if (uninited) {
         continue;
@@ -107,117 +70,192 @@ export class UniqueOnMutitpleFieldsValidatorService {
     };
   }
 
-  updateValidatorInfo(arg: UniqueOnMutipleFieldsValidator.Method.UpdateValidatorInfo) {
-    this.accessValidatorInfo({
-      setAsNewInfo: (info) => {
+  getEnteredValueQuantitySet(arg: {
+    groupName: string
+  }) {
+    return this.enteredValues[arg.groupName];
+  }
+
+
+
+  resetValidatorInfo(arg: UniqueOnMutipleFieldsValidator.Method.InitValidatorInfo) {
+
+
+    return this.accessValidatorInfo({
+      setAsNewInfo: (previousInfo) => {
+
+
+        const previousEnteredValue = previousInfo.previousEnteredValue;
+        const isSameAsPrevEnteredValue = previousEnteredValue === arg.enteredValue;
+        if (isSameAsPrevEnteredValue) {
+          return previousInfo;
+        }
+
+        this.recaculateEnteredValueQuantity({
+          groupName: arg.groupName,
+          enteredValue : {
+            current : arg.enteredValue,
+            prev : previousEnteredValue
+          }
+        });
+
+        const changedFormcontrols = this.changeAssociationBetweenFormcontrolAndEnteredValue({
+          enteredValue : {
+            current : arg.enteredValue,
+            prev : previousEnteredValue
+          },
+          groupName: arg.groupName,
+          control: arg.control,
+        });
+
+        if (Array.isArray(changedFormcontrols)) {
+          changedFormcontrols.forEach((changedFormcontrolArray) => {
+            this.revalidateFormControl({
+              control: arg.control,
+              formControlArray: changedFormcontrolArray
+            });
+          });
+        }
+
         return {
-          ...info,
-          previousEnteredValue: arg.enteredValue
-        };
+          previousEnteredValue: arg.enteredValue,
+        } as UniqueOnMutipleFieldsValidator.FormControl.Info;
       },
       control: arg.control
     })
   }
+  private changeAssociationBetweenFormcontrolAndEnteredValue(
+    arg: UniqueOnMutipleFieldsValidator.Method.UpdateFormcontrolEnteredValue
+  ) {
 
-  private isChangeToNewValue(arg: {
-    control: UniqueOnMutipleFieldsValidator.FormControl.Root,
-  }) {
-    const model = arg.control.value as UniqueOnMutipleFieldsValidator.FormControl.ValueType;
+    const needsToBeRevalidatedFormControl = [] as UniqueOnMutipleFieldsValidator.FormControl.Root[][];
 
-    const enteredValue = model.value;
-    const info = this.accessValidatorInfo(arg);
-    const prevEnteredValue: string = info.previousEnteredValue;
+    this.setUsedFormControlArray({
+      groupName: arg.groupName,
+      key: arg.enteredValue.current,
+      set: (usedFormControlArray) => {
+        const currentUsedFormControlArray = this.recordUsedFormControl({
+          control: arg.control,
+          usedFormControlArray,
+        });
+        needsToBeRevalidatedFormControl.push(currentUsedFormControlArray);
+      }
+    });
 
-    return {
-      enteredValue,
-      prevEnteredValue: info.previousEnteredValue,
-      isRight: enteredValue !== prevEnteredValue
+    const haveToBeRemoveUnusedFormControl = this.haveBeenEntered(arg);
+    if (haveToBeRemoveUnusedFormControl) {
+      this.setUsedFormControlArray({
+        groupName: arg.groupName,
+        key: arg.enteredValue.prev,
+        set: (usedFormControlArray) => {
+          const unusedFormControlArray = this.removeUnusedFormControl({
+            usedFormControlArray,
+            target: arg.control
+          });
+          needsToBeRevalidatedFormControl.push(unusedFormControlArray);
+        }
+      });
+    }
+
+    return needsToBeRevalidatedFormControl;
+  }
+
+  private haveBeenEntered(arg:{
+    enteredValue : {
+      prev : UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType
+    }
+  }){
+    return arg.enteredValue.prev !== undefined;
+  }
+
+  private recaculateEnteredValueQuantity(
+    arg: UniqueOnMutipleFieldsValidator.Method.RecaculateEnteredValueQuantity
+  ) {
+    const enteredValueQuantitySet = this.getEnteredValueQuantitySet(arg);
+    this.updateEnteredValueQuantity({
+      enteredValueQuantitySet,
+      key: arg.enteredValue.current,
+      type: 'increase'
+    });
+    if (this.haveBeenEntered(arg)) {
+      this.updateEnteredValueQuantity({
+        enteredValueQuantitySet,
+        key: arg.enteredValue.prev,
+        type: 'decrease'
+      });
     }
   }
 
-  private updateEnteredValue(arg: UniqueOnMutipleFieldsValidator.Method.UpdateEnteredValue) {
-    this.recordUsedFormControl(arg);
+  private recordUsedFormControl(arg: UniqueOnMutipleFieldsValidator.Method.RecordUsedFormControl) {
+    if (!arg.usedFormControlArray) {
+      return arg.usedFormControlArray;
+    }
 
-    this.increaseEnteredValueQuantity(arg);
+    arg.usedFormControlArray.push(arg.control);
 
-    this.updateValidatorInfo(arg);
+    return arg.usedFormControlArray;
   }
 
-  private recordUsedFormControl(arg: UniqueOnMutipleFieldsValidator.Method.RecordUsedFormControl) {
+  private setUsedFormControlArray(arg: {
+    groupName: string,
+    key: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType,
+    set: (usedFormControlsArray: UniqueOnMutipleFieldsValidator.FormControl.Root[]) => void
+  }) {
     if (!this.usedFormControlSet[arg.groupName]) {
       this.usedFormControlSet[arg.groupName] = {};
     }
 
     const usedFormControls = this.usedFormControlSet[arg.groupName];
-    if (!usedFormControls[arg.enteredValue]) {
-      usedFormControls[arg.enteredValue] = [];
+    let usedFormControlsArray = usedFormControls[arg.key]
+    if (!usedFormControlsArray) {
+      usedFormControls[arg.key] = usedFormControlsArray = [];
     }
 
-    usedFormControls[arg.enteredValue].push(arg.control);
+    arg.set(usedFormControlsArray);
+
+    return usedFormControlsArray;
   }
 
-  private increaseEnteredValueQuantity(arg: UniqueOnMutipleFieldsValidator.Method.IncreaseEnteredValueQuantity) {
-    arg.enteredValueQuantitySet[arg.enteredValue] = (Number(arg.enteredValueQuantitySet[arg.enteredValue]) || 0) + 1;
+  private updateEnteredValueQuantity(arg: UniqueOnMutipleFieldsValidator.Method.UpdateEnteredValueQuantity) {
+    let newEndtedValue = (Number(arg.enteredValueQuantitySet[arg.key]) || 0);
+    switch (arg.type) {
+      case 'increase':
+        newEndtedValue++
+        break;
+      case 'decrease':
+        newEndtedValue--
+        break;
+      default:
+        throw new Error('unknow type of update entered value quantity ');
+    }
+
+    arg.enteredValueQuantitySet[arg.key] = newEndtedValue;
+
   }
+
 
   isEntered(arg: {
-    currentValue: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType
-    enteredValueQuantitySet: UniqueOnMutipleFieldsValidator.EnteredValueSet.Record,
-    isUncaculateEnteredValueQuantity : boolean
+    key: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType
+    groupName: string
   }) {
-    const limit = arg.isUncaculateEnteredValueQuantity ? 1 : 2;
-    return (Number(arg.enteredValueQuantitySet[arg.currentValue]) || 0) >= limit;
+    const enteredValueQuantitySet = this.getEnteredValueQuantitySet(arg);
+    return (Number(enteredValueQuantitySet[arg.key]) || 0) >= 2;
   }
 
-  private setPreviousEnteredValueAsUnentered(
-    arg: UniqueOnMutipleFieldsValidator.Method.SetPreviousEnteredValueAsUnentered
-  ) {
-    this.noNeedToCaculateQuantityOfPrevEnteredValue(arg);
-    this.noNeedToRevalidateOfPrevEnteredFormControl(arg);
-  }
-
-  private noNeedToCaculateQuantityOfPrevEnteredValue(
-    arg: UniqueOnMutipleFieldsValidator.Method.NoNeedToCaculateQuantityOfPrevEnteredValue
-  ) {
-    const info = this.accessValidatorInfo({
-      control: arg.control
-    });
-
-    const enteredCount = arg.enteredValueQuantitySet[info.previousEnteredValue];
-    const unentered = enteredCount === undefined;
-    if (unentered) {
-      return;
-    } else {
-      arg.enteredValueQuantitySet[info.previousEnteredValue]--;
-    }
-  }
-
-  noNeedToRevalidateOfPrevEnteredFormControl(
-    arg: UniqueOnMutipleFieldsValidator.Method.NoNeedToRevalidateOfPrevEnteredFormControl
-  ) {
-    if (!this.usedFormControlSet[arg.groupName]) {
-      return;
-    }
-
-    const usedFormControlArray = this.usedFormControlSet[arg.groupName][arg.prevEnteredValue];
-    if (!usedFormControlArray) {
-      return;
-    }
-
-    this.removeUsedFormControl({
-      usedFormControlArray,
-      target: arg.control
-    });
-  }
-
-  private removeUsedFormControl(arg: {
+  private removeUnusedFormControl(arg: {
     usedFormControlArray: UniqueOnMutipleFieldsValidator.FormControl.Root[],
     target: UniqueOnMutipleFieldsValidator.FormControl.Root
   }) {
+    if (!arg.usedFormControlArray) {
+      return arg.usedFormControlArray;
+    }
+
     const toBeDeletedIndex = arg.usedFormControlArray.indexOf(arg.target);
     if (~toBeDeletedIndex) {
       arg.usedFormControlArray.splice(toBeDeletedIndex, 1);
     }
+
+    return arg.usedFormControlArray;
   }
 
   accessValidatorInfo(arg: {

@@ -19,49 +19,45 @@ export namespace UniqueOnMutipleFieldsValidator {
 
     export namespace Method {
 
-        export interface UpdateEnteredValue extends
-            IncreaseEnteredValueQuantity,
-            RecordUsedFormControl,
-            UpdateValidatorInfo {
 
-        }
 
-        export interface IncreaseEnteredValueQuantity {
+        export interface UpdateEnteredValueQuantity {
             enteredValueQuantitySet: UniqueOnMutipleFieldsValidator.EnteredValueSet.Record;
-            enteredValue: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType;
+            key: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType;
+            type: 'increase' | 'decrease'
         }
 
         export interface RecordUsedFormControl {
-            control: FormControl.Root,
-            enteredValue: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType;
-            groupName: string;
-        }
-
-        export interface UpdateValidatorInfo {
-            control: UniqueOnMutipleFieldsValidator.FormControl.Root;
-            enteredValue: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType;
-        }
-
-        export interface SetPreviousEnteredValueAsUnentered extends
-            NoNeedToRevalidateOfPrevEnteredFormControl,
-            NoNeedToCaculateQuantityOfPrevEnteredValue {
-        }
-
-        export interface NoNeedToCaculateQuantityOfPrevEnteredValue {
-            control: UniqueOnMutipleFieldsValidator.FormControl.Root
-            enteredValueQuantitySet: UniqueOnMutipleFieldsValidator.EnteredValueSet.Record
-        }
-
-        export interface NoNeedToRevalidateOfPrevEnteredFormControl {
-            control: UniqueOnMutipleFieldsValidator.FormControl.Root;
-            groupName: string;
-            prevEnteredValue: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType;
+            control: FormControl.Root;
+            usedFormControlArray: FormControl.Root[];
         }
 
         export interface RevalidateFormControlOfSameEnteredValue {
-            control: UniqueOnMutipleFieldsValidator.FormControl.Root,
-            groupName: string,
-            key: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType;
+            control: UniqueOnMutipleFieldsValidator.FormControl.Root;
+            formControlArray: FormControl.Root[];
+        }
+
+        export interface InitValidatorInfo {
+            enteredValue: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType;
+            groupName: string;
+            control: FormControl.Root;
+        }
+
+        export interface RecaculateEnteredValueQuantity {
+            enteredValue: {
+                current: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType;
+                prev: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType;
+            }
+            groupName: string;
+        }
+
+        export interface UpdateFormcontrolEnteredValue {
+            enteredValue: {
+                current: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType;
+                prev: UniqueOnMutipleFieldsValidator.EnteredValueSet.ValueType;
+            };
+            groupName: string;
+            control: UniqueOnMutipleFieldsValidator.FormControl.Root;
         }
 
     }
